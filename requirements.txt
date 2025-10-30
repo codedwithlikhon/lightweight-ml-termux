@@ -18,8 +18,14 @@ seaborn>=0.12.0
 termux-api>=0.50.0
 
 # Deployment
+Flask>=2.3.0
+gunicorn>=21.0.0
 huggingface-hub>=0.15.0
 google-cloud-aiplatform>=1.25.0
 
 # Monitoring
 wandb>=0.15.0
+
+# Testing
+pytest>=7.0.0
+pytest-flask>=1.2.0

@@ -6,4 +6,4 @@ flask>=2.3.0
 numpy>=1.24.0
 
 # Optional: for faster inference
-# gunicorn>=21.0.0
+gunicorn>=21.0.0

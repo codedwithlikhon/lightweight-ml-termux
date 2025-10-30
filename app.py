@@ -13,6 +13,7 @@ import torch.nn as nn
 import numpy as np
 from flask import Flask, request, jsonify, render_template_string
 import os
+import time
 
 # Model architecture (must match training)
 class TinyMLP(nn.Module):
@@ -139,7 +140,6 @@ def predict():
     })
 
 if __name__ == '__main__':
-    import time
     load_model()
     print("\n" + "="*50)
     print("🚀 TinyMLP Server Starting...")
