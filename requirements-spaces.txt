@@ -1,0 +1,9 @@
+# Hugging Face Spaces Deployment
+# Minimal dependencies for lightweight deployment
+
+torch>=2.0.0
+flask>=2.3.0
+numpy>=1.24.0
+
+# Optional: for faster inference
+# gunicorn>=21.0.0
