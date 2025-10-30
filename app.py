@@ -14,6 +14,7 @@ import numpy as np
 from flask import Flask, request, jsonify, render_template_string
 import os
 import time
+from safetensors.torch import load_file
 
 # Model architecture (must match training)
 class TinyMLP(nn.Module):
@@ -43,10 +44,10 @@ def load_model():
     """Load model once at startup"""
     global model
     if model is None:
-        model_path = "models/tiny_mlp.pth"
+        model_path = "models/tiny_mlp.safetensors"
         if os.path.exists(model_path):
             model = TinyMLP()
-            model.load_state_dict(torch.load(model_path, map_location='cpu'))
+            model.load_state_dict(load_file(model_path, device="cpu"))
             model.eval()
             print(f"✅ Model loaded: {model_path}")
         else:
