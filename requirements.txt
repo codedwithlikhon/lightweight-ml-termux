@@ -1,0 +1,25 @@
+# Core ML Stack - Minimal and Lightweight
+torch>=2.0.0
+torchvision>=0.15.0
+transformers>=4.30.0
+numpy>=1.24.0
+pandas>=2.0.0
+
+# Model Compression
+onnx>=1.14.0
+onnxruntime>=1.15.0
+
+# Utilities
+tqdm>=4.65.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Termux Specific
+termux-api>=0.50.0
+
+# Deployment
+huggingface-hub>=0.15.0
+google-cloud-aiplatform>=1.25.0
+
+# Monitoring
+wandb>=0.15.0
