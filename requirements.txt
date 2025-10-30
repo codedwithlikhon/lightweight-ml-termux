@@ -25,3 +25,7 @@ google-cloud-aiplatform>=1.25.0
 
 # Monitoring
 wandb>=0.15.0
+
+# Testing
+pytest>=7.0.0
+pytest-flask>=1.2.0
