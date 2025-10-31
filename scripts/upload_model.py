@@ -1,13 +1,13 @@
 import os
-import argparse
 from huggingface_hub import HfApi
 
-def upload_model(model_path):
+def upload_model(model_path="models/sentiment-model"):
     """
     Uploads a model to the Hugging Face Hub.
 
     Args:
         model_path (str): The local path to the model directory.
+                          Defaults to 'models/sentiment-model'.
     """
     hf_token = os.getenv("HF_TOKEN")
     if not hf_token:
@@ -25,7 +25,4 @@ def upload_model(model_path):
     print(f"Model from {model_path} uploaded to {repo_id}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Upload a model to the Hugging Face Hub.")
-    parser.add_argument("--model_path", type=str, required=True, help="The local path to the model directory.")
-    args = parser.parse_args()
-    upload_model(args.model_path)
+    upload_model()
