@@ -2,6 +2,8 @@
 # Minimal dependencies for lightweight deployment
 
 torch>=2.0.0
+safetensors>=0.4.0
+transformers>=4.30.0
 flask>=2.3.0
 numpy>=1.24.0
 

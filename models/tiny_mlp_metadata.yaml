@@ -1,4 +1,0 @@
-architecture: TinyMLP
-device: cpu
-model_size_mb: 0.2033863067626953
-total_params: 52650
