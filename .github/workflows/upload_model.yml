@@ -19,10 +19,14 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Download model
-        run: python scripts/download_model.py
-
+      # This workflow uploads the model from the 'models/sentiment-model' directory.
+      # To use this for your own models, you can:
+      # 1. Place your trained model in the 'models/sentiment-model' directory.
+      # 2. If your model is small enough, you can check it into your repository.
+      #    You may need to remove the '/models/' line from the .gitignore file.
+      # 3. For larger models, consider using a tool like Git LFS or another method
+      #    to make your model files available to this workflow.
       - name: Upload model to Hugging Face Hub
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python scripts/upload_model.py
+        run: python scripts/upload_model.py --model_path models/sentiment-model

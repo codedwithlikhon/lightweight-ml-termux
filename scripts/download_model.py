@@ -1,37 +1,19 @@
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
 import os
+from huggingface_hub import snapshot_download
 
 def download_model():
     """
-    Downloads a Hugging Face model and tokenizer and saves them locally.
+    Downloads the sentiment analysis model from the Hugging Face Hub.
     """
     model_name = "distilbert-base-uncased-finetuned-sst-2-english"
-    output_dir = "models/sentiment-model"
+    local_dir = "models/sentiment-model"
 
-    # Create the output directory if it doesn't exist
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-        print(f"✅ Created directory: {output_dir}")
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
 
-    # Download and save the tokenizer
-    try:
-        print(f"⏳ Downloading tokenizer for '{model_name}'...")
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        tokenizer.save_pretrained(output_dir)
-        print(f"✅ Tokenizer saved to: {output_dir}")
-    except Exception as e:
-        print(f"❌ An error occurred while downloading the tokenizer: {e}")
-        return
-
-    # Download and save the model
-    try:
-        print(f"⏳ Downloading model for '{model_name}'...")
-        model = AutoModelForSequenceClassification.from_pretrained(model_name)
-        model.save_pretrained(output_dir)
-        print(f"✅ Model saved to: {output_dir}")
-    except Exception as e:
-        print(f"❌ An error occurred while downloading the model: {e}")
-        return
+    print(f"Downloading model: {model_name} to {local_dir}")
+    snapshot_download(repo_id=model_name, local_dir=local_dir, repo_type="model")
+    print("Model download complete.")
 
 if __name__ == "__main__":
     download_model()
