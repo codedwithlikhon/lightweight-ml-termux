@@ -26,6 +26,7 @@ venv/
 models/*.pkl
 models/*.joblib
 !models/sample_*
+models/sentiment-model/
 
 # Data files (large datasets)
 data/*.csv

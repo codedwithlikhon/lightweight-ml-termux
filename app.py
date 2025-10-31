@@ -9,49 +9,36 @@ Features:
 """
 
 import torch
-import torch.nn as nn
 import numpy as np
 from flask import Flask, request, jsonify, render_template_string
 import os
 import time
-from safetensors.torch import load_file
-
-# Model architecture (must match training)
-class TinyMLP(nn.Module):
-    def __init__(self, input_size=784, hidden1=64, hidden2=32, num_classes=10):
-        super(TinyMLP, self).__init__()
-        self.features = nn.Sequential(
-            nn.Linear(input_size, hidden1),
-            nn.ReLU(),
-            nn.Linear(hidden1, hidden2),
-            nn.ReLU(),
-        )
-        self.classifier = nn.Linear(hidden2, num_classes)
-
-    def forward(self, x):
-        x = x.view(x.size(0), -1)
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
 
 app = Flask(__name__)
 
-# Global model variable (loaded once)
+# Global pipeline variables (loaded once)
+tokenizer = None
 model = None
 device = torch.device('cpu')
 
-def load_model():
-    """Load model once at startup"""
-    global model
-    if model is None:
-        model_path = "models/tiny_mlp.safetensors"
+def load_pipeline():
+    """Load model and tokenizer once at startup"""
+    global tokenizer, model
+    if tokenizer is None or model is None:
+        model_path = "models/sentiment-model"
         if os.path.exists(model_path):
-            model = TinyMLP()
-            model.load_state_dict(load_file(model_path, device="cpu"))
+            tokenizer = AutoTokenizer.from_pretrained(model_path)
+            model = AutoModelForSequenceClassification.from_pretrained(model_path)
+            model.to(device)
             model.eval()
-            print(f"✅ Model loaded: {model_path}")
+            print(f"✅ Pipeline loaded from: {model_path}")
         else:
-            print(f"❌ Model not found: {model_path}")
+            print(f"❌ Model directory not found: {model_path}")
+            # As a fallback, try to download the model if it's not present locally
+            from scripts.download_model import download_model
+            download_model()
+            load_pipeline() # Retry loading after download
 
 @app.route('/')
 def home():
@@ -60,46 +47,59 @@ def home():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>TinyMLP - Ultra-Lightweight ML</title>
+        <title>Sentiment Analysis - Lightweight ML</title>
         <style>
             body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
             h1 { color: #2c3e50; }
             .box { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
+            textarea { width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; min-height: 80px; }
             button { background: #3498db; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
             button:hover { background: #2980b9; }
             #result { margin-top: 20px; padding: 10px; display: none; }
         </style>
     </head>
     <body>
-        <h1>🤖 TinyMLP - Ultra-Lightweight Model</h1>
+        <h1>🧠 Sentiment Analysis with Transformers</h1>
         <div class="box">
-            <h3>About</h3>
-            <p>Model size: <strong>0.20 MB</strong></p>
-            <p>Parameters: <strong>52,650</strong></p>
-            <p>Architecture: <strong>784 → 64 → 32 → 10</strong></p>
-            <p>Trained on: <strong>Android Termux (Mobile CPU)</strong></p>
+            <h3>About the Model</h3>
+            <p>Model: <strong>distilbert-base-uncased-finetuned-sst-2-english</strong></p>
+            <p>This is a lightweight and fast model for sentiment analysis.</p>
         </div>
 
         <div class="box">
-            <h3>Test Prediction</h3>
-            <button onclick="predict()">Generate Random Prediction</button>
+            <h3>Analyze Text</h3>
+            <textarea id="text-input" placeholder="Enter some text to analyze..."></textarea>
+            <br><br>
+            <button onclick="analyze()">Analyze Sentiment</button>
             <div id="result"></div>
         </div>
 
         <script>
-            async function predict() {
+            async function analyze() {
+                const textInput = document.getElementById('text-input').value;
+                if (!textInput) {
+                    alert('Please enter some text to analyze.');
+                    return;
+                }
+
                 const resultDiv = document.getElementById('result');
                 resultDiv.style.display = 'block';
-                resultDiv.innerHTML = '⏳ Predicting...';
+                resultDiv.innerHTML = '⏳ Analyzing...';
 
                 try {
-                    const response = await fetch('/predict', { method: 'POST' });
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ text: textInput })
+                    });
                     const data = await response.json();
                     resultDiv.innerHTML = `
-                        <h4>Prediction Result</h4>
-                        <p><strong>Predicted class:</strong> ${data.prediction}</p>
+                        <h4>Analysis Result</h4>
+                        <p><strong>Sentiment:</strong> ${data.prediction}</p>
                         <p><strong>Confidence:</strong> ${(data.confidence * 100).toFixed(2)}%</p>
-                        <p><strong>Response time:</strong> ${data.inference_time}ms</p>
+                        <p><strong>Response time:</strong> ${data.inference_time_ms}ms</p>
                     `;
                 } catch (error) {
                     resultDiv.innerHTML = `<p style="color: red;">Error: ${error}</p>`;
@@ -113,40 +113,45 @@ def home():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    """API endpoint for predictions"""
-    if model is None:
-        load_model()
+    """API endpoint for sentiment analysis"""
+    if tokenizer is None or model is None:
+        load_pipeline()
 
-    # Generate random input (28x28 = 784 features)
-    x = torch.randn(1, 784)
+    data = request.get_json()
+    text = data.get('text', '')
 
-    # Predict
+    if not text:
+        return jsonify({'error': 'No text provided'}), 400
+
     start_time = time.time()
+
+    # Tokenize the input text
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True).to(device)
+
+    # Perform inference
     with torch.no_grad():
-        outputs = model(x)
-        probabilities = torch.softmax(outputs, dim=1)
-        predicted_class = torch.argmax(probabilities, dim=1).item()
-        confidence = torch.max(probabilities).item()
+        outputs = model(**inputs)
+
+    # Get the prediction and confidence
+    probabilities = torch.softmax(outputs.logits, dim=1)
+    confidence, predicted_class_idx = torch.max(probabilities, dim=1)
+    predicted_class = model.config.id2label[predicted_class_idx.item()]
+
     inference_time = int((time.time() - start_time) * 1000)
 
     return jsonify({
         'prediction': predicted_class,
-        'confidence': confidence,
-        'inference_time': inference_time,
-        'model_info': {
-            'size_mb': 0.20,
-            'parameters': 52650,
-            'architecture': '784->64->32->10'
-        }
+        'confidence': confidence.item(),
+        'inference_time_ms': inference_time
     })
 
 if __name__ == '__main__':
-    load_model()
+    load_pipeline()
     print("\n" + "="*50)
-    print("🚀 TinyMLP Server Starting...")
+    print("🚀 Sentiment Analysis Server Starting...")
     print("="*50)
     print("📍 URL: http://localhost:7860")
-    print("📱 Model: 0.20 MB | 52,650 params")
+    print("📱 Model: distilbert-base-uncased-finetuned-sst-2-english")
     print("="*50 + "\n")
 
     # Run on port 7860 (Gradio/HF Spaces standard)
