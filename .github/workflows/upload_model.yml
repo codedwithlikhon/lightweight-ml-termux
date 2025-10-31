@@ -1,0 +1,28 @@
+name: Upload Model to Hugging Face Hub
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload-model:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Download model
+        run: python scripts/download_model.py
+
+      - name: Upload model to Hugging Face Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/upload_model.py
